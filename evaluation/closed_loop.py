@@ -15,11 +15,12 @@ from baselines.deterministic_mpc import solve_deterministic_dispatch
 from evaluation.metrics import wilson_interval
 from evaluation.statistical_tests import exact_mcnemar
 from optimization.commitment import calibrate_commitment
+from baselines.quantile_commitment import calibrate_quantile_commitment
 from optimization.dispatch import solve_rolling_event_dispatch
 from optimization.recovery import plan_recovery
 from simulator.uncertainty import UncertaintyAssumptions, generate_uncertainty_scenario
 
-METHODS = ("fixed_horizon", "rolling_risk_aware_mpc", "rolling_rafc_v")
+METHODS = ("fixed_horizon", "rolling_risk_aware_mpc", "rolling_quantile_baseline", "rolling_rafc_v")
 
 
 def _event_metrics(rows: list[dict], commitment: float, dt: float, minimum_soc: float,
@@ -155,8 +156,14 @@ def run_closed_loop_rafc_evaluation(
         recovery_aware=False, assumptions=a, meter_margin_mw=cal_margin,
         observed_noise=dispatch_policy == "v2",
     )
+    quantile_cal = calibrate_quantile_commitment(
+        config, n_scenarios=calibration_scenarios, seed=calibration_seed,
+        step_mw=commitment_step_mw, assumptions=a, meter_margin_mw=cal_margin,
+        observed_noise=dispatch_policy == "v2",
+    )
     calibration_runtime = perf_counter() - cal_start
     commitments = {
+        "rolling_quantile_baseline": float(quantile_cal["accepted_commitment_mw"]),
         "rolling_rafc_v": float(rafc_cal["accepted_commitment_mw"]),
         "rolling_risk_aware_mpc": float(risk_cal["accepted_commitment_mw"]),
     }
@@ -204,7 +211,7 @@ def run_closed_loop_rafc_evaluation(
 
         # The same scenario is fed to the same rolling controller under the two
         # calibration policies, preserving a paired and operationally fair test.
-        for method in ("rolling_risk_aware_mpc", "rolling_rafc_v"):
+        for method in ("rolling_risk_aware_mpc", "rolling_quantile_baseline", "rolling_rafc_v"):
             commitment = commitments[method]
             if commitment in dispatch_cache:
                 dispatch, dispatch_runtime, shared_from = dispatch_cache[commitment]
@@ -398,12 +405,14 @@ def run_closed_loop_rafc_evaluation(
         "commitment_calibration": {
             "rolling_rafc_v": rafc_cal,
             "rolling_risk_aware_mpc": risk_cal,
+            "rolling_quantile_baseline": quantile_cal,
             "heldout_data_used": False,
             "same_calibration_seed_set": True,
         },
         "controller_comparison": {
             "fixed_horizon": "RAFC commitment; meter-margin protected nominal schedule; then held-out disturbances",
             "rolling_risk_aware_mpc": "event-reliability calibration; rolling Pyomo/HiGHS dispatch; RecoveryGuard verification",
+            "rolling_quantile_baseline": "scenario-filtered commitment (tightest 10% discarded); same rolling dispatch and RecoveryGuard",
             "rolling_rafc_v": "event and recovery reliability calibration; same rolling dispatch and RecoveryGuard",
         },
         "results": summaries,

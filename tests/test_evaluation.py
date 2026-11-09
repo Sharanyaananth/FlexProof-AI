@@ -64,7 +64,7 @@ def test_closed_loop_rafc_evaluation_uses_disjoint_paired_scenarios_and_exports(
     assert result["commitment_calibration"]["heldout_data_used"] is False
     assert result["calibration_sample_count"]==80
     assert {row["controller"] for row in result["results"]}=={
-        "fixed_horizon","rolling_risk_aware_mpc","rolling_rafc_v"}
+        "fixed_horizon","rolling_risk_aware_mpc","rolling_quantile_baseline","rolling_rafc_v"}
     assert result["paired_tests"]["fixed_horizon_vs_rolling_rafc_v"]["event_mcnemar"]["sample_count"]==12
     assert len(result["scenarios"])==12
     by_controller={row["controller"]:row for row in result["results"]}
