@@ -9,6 +9,7 @@ import jsonschema
 
 from baselines.deterministic_mpc import solve_deterministic_dispatch
 from baselines.risk_aware_mpc import run_risk_aware_mpc
+from baselines.quantile_baseline import run_quantile_baseline
 from baselines.rule_based import run_rule_based
 from optimization.commitment import calibrate_commitment
 from optimization.rafc_v import run_rafc_v
@@ -23,7 +24,7 @@ from simulator.models import Result, ScenarioConfig
 _ROOT=Path(__file__).resolve().parents[1]
 _SCENARIO_SCHEMA=json.loads((_ROOT/"contracts"/"scenario.schema.json").read_text(encoding="utf-8"))
 _RESULT_SCHEMA=json.loads((_ROOT/"contracts"/"result.schema.json").read_text(encoding="utf-8"))
-_CONTROLLERS={"nominal","nominal_illustration","rule_based","deterministic_mpc","risk_aware_mpc","rafc_v"}
+_CONTROLLERS={"nominal","nominal_illustration","rule_based","deterministic_mpc","risk_aware_mpc","quantile_baseline","rafc_v"}
 
 
 def load_scenario(source: str | Path | dict[str, Any] | ScenarioConfig) -> ScenarioConfig:
@@ -76,7 +77,8 @@ def run_scenario(config: str | Path | dict[str, Any] | ScenarioConfig, *,
     """Run one reproducible scenario through a selected controller and recovery check.
 
     Supported controllers are ``nominal``, ``rule_based``, ``deterministic_mpc``,
-    ``risk_aware_mpc``, and ``rafc_v``. Results are JSON-compatible and schema 1.0.0.
+    ``risk_aware_mpc``, ``quantile_baseline``, and ``rafc_v``. Results are
+    JSON-compatible and schema 1.0.0.
     """
     try:
         typed=load_scenario(config)
@@ -97,6 +99,9 @@ def run_scenario(config: str | Path | dict[str, Any] | ScenarioConfig, *,
         result=solve_deterministic_dispatch(normalized)
     elif selected=="risk_aware_mpc":
         result=run_risk_aware_mpc(normalized,calibration_scenarios=calibration_scenarios,
+            calibration_seed=seed,commitment_step_mw=commitment_step_mw)
+    elif selected=="quantile_baseline":
+        result=run_quantile_baseline(normalized,calibration_scenarios=calibration_scenarios,
             calibration_seed=seed,commitment_step_mw=commitment_step_mw)
     else:
         result=run_rafc_v(normalized,calibration_scenarios=calibration_scenarios,

@@ -2,8 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from baselines.quantile_commitment import calibrate_quantile_commitment, scenario_tightness
-from simulator.uncertainty import generate_uncertainty_scenario
+from baselines.quantile_commitment import calibrate_quantile_commitment
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -20,23 +19,21 @@ def test_commitment_within_request_and_reproducible():
     assert first["accepted_commitment_mw"] == second["accepted_commitment_mw"]
 
 
-def test_retains_requested_coverage():
+def test_accepted_commitment_meets_coverage():
     result = calibrate_quantile_commitment(_config(), n_scenarios=200, coverage=0.9)
-    assert result["retained_sample_count"] == 180
+    assert result["required_successes"] == 180
+    assert result["selected_evidence"]["successes"] >= 180
     assert result["recovery_aware"] is False
 
 
 def test_lower_coverage_never_promises_less():
     config = _config()
-    strict = calibrate_quantile_commitment(config, n_scenarios=300, coverage=1.0)
+    strict = calibrate_quantile_commitment(config, n_scenarios=300, coverage=0.99)
     loose = calibrate_quantile_commitment(config, n_scenarios=300, coverage=0.9)
     assert loose["accepted_commitment_mw"] >= strict["accepted_commitment_mw"]
 
 
-def test_urgent_reclaim_scenarios_rank_as_tighter():
-    config = _config()
-    tight = [s for s in (generate_uncertainty_scenario(400_000 + i) for i in range(200)) if s.urgent_reclaim]
-    loose = [s for s in (generate_uncertainty_scenario(400_000 + i) for i in range(200))
-             if not s.urgent_reclaim and not s.battery_derated]
-    assert tight and loose
-    assert max(scenario_tightness(config, s) for s in tight) < min(scenario_tightness(config, s) for s in loose)
+def test_ignores_recovery_limit():
+    normal = calibrate_quantile_commitment(_config(), n_scenarios=300)
+    tight = calibrate_quantile_commitment(_config("fp001_recovery_stress_18p0.yaml"), n_scenarios=300)
+    assert tight["accepted_commitment_mw"] == normal["accepted_commitment_mw"]

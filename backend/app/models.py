@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-Controller = Literal["rafc_v", "risk_aware_mpc", "deterministic_mpc", "rule_based", "nominal"]
+Controller = Literal["rafc_v", "risk_aware_mpc", "quantile_baseline", "deterministic_mpc", "rule_based", "nominal"]
 
 
 class ScenarioRequest(BaseModel):

@@ -48,7 +48,7 @@ def fp001_defaults() -> dict:
     except (ValueError, KeyError, JSONSchemaValidationError) as exc:
         raise HTTPException(status_code=500, detail=f"FP-001 configuration is invalid: {exc}") from exc
     return {"scenario": config, "supported_controllers": [
-        "rafc_v", "risk_aware_mpc", "deterministic_mpc", "rule_based", "nominal"],
+        "rafc_v", "risk_aware_mpc", "quantile_baseline", "deterministic_mpc", "rule_based", "nominal"],
         "reliability_note": "Controller reliability fields are calibration evidence, not held-out validation."}
 
 
