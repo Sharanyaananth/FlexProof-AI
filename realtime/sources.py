@@ -37,7 +37,8 @@ class SimulatedSource:
     """Synthetic readings around the FP-001 facility, with daily and random variation.
 
     Inference load follows a daily usage pattern plus noise; flexible compute
-    occasionally drops when urgent jobs take capacity back.
+    occasionally drops when urgent jobs take capacity back; the battery follows a
+    daily cycle (drawn down at busy times, recharged at quiet times).
     """
 
     def __init__(self, config: dict, *, seed: int = 20261014, interval_minutes: int = 5,
@@ -52,7 +53,7 @@ class SimulatedSource:
 
     def readings(self) -> Iterator[TelemetryReading]:
         minute = 0
-        soc = float(self.battery["initial_soc"])
+        soc_mid = float(self.battery["initial_soc"])
         crit_nominal = float(self.facility["critical_inference_mw"])
         fixed = float(self.facility["fixed_auxiliary_mw"])
         flex_nominal = float(self.facility["deferrable_compute_mw"])
@@ -64,8 +65,9 @@ class SimulatedSource:
             if self.rng.random() < 0.05:                              # urgent jobs reclaim capacity
                 flexible -= 0.4
             flexible = max(0.0, min(flex_nominal, flexible))
+            cycle = -0.10 * math.sin(2 * math.pi * (hour - 9) / 12)    # about +/-10 points twice a day
             soc = min(float(self.battery["max_soc"]),
-                      max(float(self.battery["min_soc"]), soc + self.rng.gauss(0, 0.001)))
+                      max(float(self.battery["min_soc"]), soc_mid + cycle + self.rng.gauss(0, 0.003)))
             yield TelemetryReading(
                 minute=minute,
                 critical_load_mw=round(critical, 3),
