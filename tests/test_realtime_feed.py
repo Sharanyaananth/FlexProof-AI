@@ -30,3 +30,13 @@ def test_load_varies_realistically():
     critical = [r.critical_load_mw for r in _take(288)]          # one day at 5-minute steps
     assert max(critical) - min(critical) > 0.3
     assert 11.0 < sum(critical) / len(critical) < 13.0
+    
+
+
+def test_clock_source_reports_the_given_time():
+    from datetime import datetime
+    from realtime.sources import ClockSource
+    fixed = datetime(2026, 11, 13, 14, 30, 0)
+    now, reading = ClockSource(CONFIG, seed=1, clock=lambda: fixed).current()
+    assert now == fixed
+    assert CONFIG["battery"]["min_soc"] <= reading.battery_soc <= CONFIG["battery"]["max_soc"]

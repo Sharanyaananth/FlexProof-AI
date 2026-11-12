@@ -1,6 +1,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  Activity,
   BatteryCharging,
   CircleCheck,
   LayoutDashboard,
@@ -24,7 +25,7 @@ import {
   YAxis,
 } from "recharts";
 
-import CommitmentPlanner from "./pages/CommitmentPlanner";
+import LiveDashboard from "./pages/LiveDashboard";
 import RunsPage from "./pages/RunsPage";
 import { API_BASE } from "./api";
 import "./App.css";
@@ -42,7 +43,7 @@ const powerData = [
 
 const navigation = [
   { name: "Overview", icon: LayoutDashboard },
-  { name: "Commitment Planner", icon: Settings2 },
+  { name: "Live Dashboard", icon: Activity },
   { name: "Run History", icon: BatteryCharging },
 ];
 
@@ -367,6 +368,8 @@ function App() {
           ) : activePage === "Commitment Planner" ? (
             /* Commitment Planner page */
             <CommitmentPlanner />
+          ) : activePage === "Live Dashboard" ? (
+            <LiveDashboard />
           ) : activePage === "Run History" ? (
             <RunsPage />
           ) : (

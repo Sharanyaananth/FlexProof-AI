@@ -12,6 +12,7 @@ from jsonschema import ValidationError as JSONSchemaValidationError
 from pydantic import ValidationError
 
 from backend.app.models import ScenarioRequest
+from backend.app.services.live import live_session
 from backend.app.services.reports import build_run_pdf
 from backend.app.services.simulation import build_config, execute_scenario
 from backend.app.services.storage import get_run, list_runs
@@ -77,6 +78,17 @@ def run_scenario_endpoint(request: ScenarioRequest) -> dict:
     return {"status": result["status"],
             "simulation_type": "nominal" if request.controller == "nominal" else "optimized",
             "reliability_certified": False, "verification": verification, "result": result}
+
+
+@app.post("/api/live/start")
+def live_start(mode: str = Query(default="realtime", pattern="^(realtime|demo)$"),
+               seed: int | None = Query(default=None, ge=0)) -> dict:
+    return live_session.start(mode=mode, seed=seed)
+
+
+@app.get("/api/live/next")
+def live_next() -> dict:
+    return live_session.next()
 
 
 @app.get("/api/runs")
